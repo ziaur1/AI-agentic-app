@@ -6,6 +6,13 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import OpenAI from "openai";
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 
+const required = ['OPENAI_API_KEY', 'PINECONE_INDEX_NAME', 'GEMINI_API_KEY'];
+const missingEnv = required.filter((k) => !process.env[k]);
+if (missingEnv.length) {
+  console.error('Missing required env vars:', missingEnv.join(', '));
+  process.exit(1);
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -17,27 +24,37 @@ const history = [];
   Step 1: Rewrite Query (optional)
 --------------------------------*/
 async function transformQuery(question) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    messages: [
-      { role: "system", content: "Rewrite the question for semantic search." },
-      { role: "user", content: question },
-    ],
-  });
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "Rewrite the question for semantic search." },
+        { role: "user", content: question },
+      ],
+    });
 
-  return response.choices[0].message.content;
+    return response.choices?.[0]?.message?.content ?? question;
+  } catch (err) {
+    console.warn('transformQuery failed, using original question:', err?.message ?? err);
+    return question;
+  }
 }
 
 /* -------------------------------
   Step 2: Create Embedding
 --------------------------------*/
 async function embedQuery(text) {
-  const embedding = await openai.embeddings.create({
-    model: "text-embedding-3-small", // 1536 dims
-    input: text,
-  });
+  try {
+    const embedding = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: text,
+    });
 
-  return embedding.data[0].embedding;
+    return embedding.data?.[0]?.embedding;
+  } catch (err) {
+    console.warn('OpenAI embedding failed:', err?.message ?? err);
+    return null;
+  }
 }
 
 /* -------------------------------
@@ -47,14 +64,12 @@ async function chatting(question) {
   console.log("\nUser:", question);
 
   const refinedQuery = await transformQuery(question);
-
-
-   const embeddings = new GoogleGenerativeAIEmbeddings({
+  const embeddings = new GoogleGenerativeAIEmbeddings({
     apiKey: process.env.GEMINI_API_KEY,
     model: 'text-embedding-004',
-    });
+  });
 
- const queryVector = await embeddings.embedQuery(refinedQuery); 
+  const queryVector = await embeddings.embedQuery(refinedQuery);
   //const queryVector = await embedQuery(refinedQuery);
 
   // Pinecone
@@ -66,6 +81,11 @@ async function chatting(question) {
     topK: 10,
     includeMetadata: true,
   });
+
+  if (!searchResults?.matches?.length) {
+    console.log('No search matches found.');
+    return;
+  }
 
   const context = searchResults.matches
     .map(match => match.metadata.text)
