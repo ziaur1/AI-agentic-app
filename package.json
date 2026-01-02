@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "node server.js",
     "query": "node query.js",
-    "ingest": "node index.js",
+    "ingest": "node cli.js",
     "lint": "eslint . --ext .js"
   },
   "dependencies": {
@@ -19,7 +19,8 @@
     "dotenv": "^16.6.1",
     "pdf-parse": "^1.1.1",
     "readline-sync": "^1.4.10",
-    "openai": "^4.8.0"
+    "openai": "^4.8.0",
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "eslint": "^8.50.0"

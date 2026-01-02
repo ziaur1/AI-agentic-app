@@ -7,12 +7,22 @@ import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { PineconeStore } from '@langchain/pinecone';
 
-async function main() {
+export async function ingest(logger) {
+  const info = (...args) => {
+    if (logger) logger(args.join(' '));
+    else console.log(...args);
+  };
+  const error = (...args) => {
+    if (logger) logger('ERROR: ' + args.join(' '));
+    else console.error(...args);
+  };
+
   const required = ['GEMINI_API_KEY', 'PINECONE_INDEX_NAME'];
   const missing = required.filter((k) => !process.env[k]);
   if (missing.length) {
-    console.error('Missing required env vars:', missing.join(', '));
-    process.exit(1);
+    const msg = 'Missing required env vars: ' + missing.join(', ');
+    error(msg);
+    throw new Error(msg);
   }
 
   const PDF_PATH = './dsa.pdf';
@@ -21,11 +31,11 @@ async function main() {
   try {
     rawDocs = await pdfLoader.load();
   } catch (err) {
-    console.error('Failed to load PDF:', err?.message ?? err);
-    process.exit(1);
+    error('Failed to load PDF:', err?.message ?? err);
+    throw err;
   }
 
-  console.log('Loaded documents:', rawDocs.length);
+  info('Loaded documents:', rawDocs.length);
 
   const CHUNK_SIZE = 1000;
   const CHUNK_OVERLAP = 200;
@@ -50,14 +60,9 @@ async function main() {
       maxConcurrency: 5,
     });
 
-    console.log('✅ Documents ingested successfully!');
+    info('✅ Documents ingested successfully!');
   } catch (err) {
-    console.error('❌ Pinecone ingestion error:', err?.message ?? err);
-    process.exit(1);
+    error('❌ Pinecone ingestion error:', err?.message ?? err);
+    throw err;
   }
 }
-
-main().catch((err) => {
-  console.error('Fatal error:', err?.message ?? err);
-  process.exit(1);
-});

@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI Agentic App — Ingest</title>
+  <style>body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;margin:24px}button{padding:8px 12px}pre{background:#f4f4f4;padding:12px}</style>
+</head>
+<body>
+  <h1>AI Agentic App</h1>
+  <p>Trigger document ingestion to your Pinecone index.</p>
+  <button id="ingest">Trigger Ingest</button>
+  <pre id="output"></pre>
+
+  <hr />
+  <h2>Chat (QA over ingested docs)</h2>
+  <div>
+    <input id="chat-input" placeholder="Ask a question about the documents" style="width:60%" />
+    <button id="chat-send">Send</button>
+  </div>
+  <div id="chat-output" style="margin-top:12px"></div>
+
+  <script>
+    document.getElementById('ingest').addEventListener('click', async () => {
+      const out = document.getElementById('output');
+      out.textContent = 'Starting ingestion...';
+      try {
+        const res = await fetch('/api/ingest', { method: 'POST' });
+        const data = await res.json();
+        out.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        out.textContent = 'Error: ' + err;
+      }
+    });
+
+    document.getElementById('chat-send').addEventListener('click', async () => {
+      const q = document.getElementById('chat-input').value.trim();
+      const out = document.getElementById('chat-output');
+      if (!q) return;
+      out.innerHTML = '<p><em>Thinking...</em></p>';
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: q }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          out.innerHTML = `<div style="background:#eef;padding:12px;border-radius:6px">${data.answer.replace(/\n/g, '<br/>')}</div>`;
+        } else {
+          out.innerHTML = `<div style="color:red">Error: ${data.error || JSON.stringify(data)}</div>`;
+        }
+      } catch (err) {
+        out.innerHTML = `<div style="color:red">${err}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>
