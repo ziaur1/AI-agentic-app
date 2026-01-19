@@ -34,26 +34,41 @@
     });
 
     document.getElementById('chat-send').addEventListener('click', async () => {
-      const q = document.getElementById('chat-input').value.trim();
-      const out = document.getElementById('chat-output');
-      if (!q) return;
-      out.innerHTML = '<p><em>Thinking...</em></p>';
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: q }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          out.innerHTML = `<div style="background:#eef;padding:12px;border-radius:6px">${data.answer.replace(/\n/g, '<br/>')}</div>`;
-        } else {
-          out.innerHTML = `<div style="color:red">Error: ${data.error || JSON.stringify(data)}</div>`;
-        }
-      } catch (err) {
-        out.innerHTML = `<div style="color:red">${err}</div>`;
-      }
+  const q = document.getElementById('chat-input').value.trim();
+  const out = document.getElementById('chat-output');
+  if (!q) return;
+
+  out.innerHTML = '<p><em>Thinking...</em></p>';
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: q }),
     });
+
+    const data = await res.json();
+    console.log('API data:', data); // 🔥 debug once
+
+    if (res.ok) {
+      const answer =
+        data.answer ||
+        data.text ||
+        data.response ||
+        'No response generated';
+
+      out.innerHTML = `
+        <div style="background:#eef;padding:12px;border-radius:6px">
+          ${answer.replace(/\n/g, '<br/>')}
+        </div>
+      `;
+    } else {
+      out.innerHTML = `<div style="color:red">Error: ${data.error || JSON.stringify(data)}</div>`;
+    }
+  } catch (err) {
+    out.innerHTML = `<div style="color:red">${err}</div>`;
+  }
+});
   </script>
 </body>
 </html>

@@ -25,7 +25,7 @@ export async function ingest(logger) {
     throw new Error(msg);
   }
 
-  const PDF_PATH = './dsa.pdf';
+  const PDF_PATH = './termandcondition.pdf';
   const pdfLoader = new PDFLoader(PDF_PATH);
   let rawDocs;
   try {
@@ -54,7 +54,21 @@ export async function ingest(logger) {
   try {
     const pinecone = new Pinecone();
     const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX_NAME);
+     await pinecone.deleteIndex(process.env.PINECONE_INDEX_NAME);
 
+      await pinecone.createIndex({
+        name: process.env.PINECONE_INDEX_NAME,
+        dimension: 768,
+        metric: "cosine",
+        spec: {
+          serverless: {
+            cloud: "aws",
+            region: "us-east-1",
+          },
+        },
+      });
+
+      
     await PineconeStore.fromDocuments(chunkedDocs, embeddings, {
       pineconeIndex,
       maxConcurrency: 5,

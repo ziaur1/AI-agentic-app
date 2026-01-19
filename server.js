@@ -1,5 +1,6 @@
 import express from 'express';
 import { ingest } from './index.js';
+import { chatting } from './query.js'; 
 import OpenAI from 'openai';
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { Pinecone } from '@pinecone-database/pinecone';
@@ -75,15 +76,28 @@ async function answerQuery(question) {
   return { answer, matches };
 }
 
-app.post('/api/chat', async (req, res) => {
-  const { message } = req.body || {};
-  if (!message) return res.status(400).json({ error: 'message is required' });
+
+app.post("/api/chat", async (req, res) => {
   try {
-    const out = await answerQuery(message);
-    res.json(out);
+    const result = await chatting(req.body.message);
+
+    if (!result) {
+      // 👈 SAFETY NET
+      return res.status(200).json({
+        type: "empty",
+        answer: "No response generated"
+      });
+    }
+
+    res.status(200).json(result);
+
   } catch (err) {
-    console.error('Chat error:', err);
-    res.status(500).json({ error: err?.message ?? String(err) });
+    console.error("API Error:", err);
+
+    res.status(500).json({
+      type: "error",
+      message: err.message || "Internal Server Error"
+    });
   }
 });
 
