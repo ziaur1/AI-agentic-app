@@ -79,10 +79,19 @@ async function answerQuery(question) {
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const result = await chatting(req.body.message);
+    const message = req.body?.message;
+    
+    if (!message) {
+      return res.status(400).json({
+        type: "error",
+        answer: "No message provided",
+        error: "Message is required"
+      });
+    }
+
+    const result = await chatting(message);
 
     if (!result) {
-      // 👈 SAFETY NET
       return res.status(200).json({
         type: "empty",
         answer: "No response generated"
@@ -96,12 +105,32 @@ app.post("/api/chat", async (req, res) => {
 
     res.status(500).json({
       type: "error",
-      message: err.message || "Internal Server Error"
+      answer: "Error processing your request",
+      error: err.message || "Internal Server Error"
     });
   }
 });
 
 const port = process.env.PORT || 3000;
+
+// Catch-all route for undefined endpoints
+app.use((req, res) => {
+  res.status(404).json({
+    type: "error",
+    error: `Endpoint not found: ${req.method} ${req.path}`
+  });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    type: "error",
+    answer: "Server error",
+    error: err.message || "Internal Server Error"
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server listening on http://localhost:${port}`);
 });

@@ -144,8 +144,9 @@ const chatting = traceable(
       const orderData = await getMagentoOrderStatus(orderNumber);
 
       if (!orderData.found) {
-        console.log(`\nAnswer:\nOrder #${orderNumber} was not found.`);
-         return {
+        const answer = `Order #${orderNumber} was not found.`;
+        console.log(`\nAnswer:\n${answer}`);
+        return {
           type: "order_status",
           answer
         };
