@@ -3,72 +3,458 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AI Agentic App — Ingest</title>
-  <style>body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;margin:24px}button{padding:8px 12px}pre{background:#f4f4f4;padding:12px}</style>
+  <title>AI Knowledge Assistant - Document Q&A</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      font-size: 32px;
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 16px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 20px;
+    }
+
+    .ingest-section {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      height: fit-content;
+    }
+
+    .ingest-section h2 {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    .ingest-section p {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .chat-section {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+    }
+
+    .chat-section h2 {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    #chat-history {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      padding-right: 8px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fafafa;
+    }
+
+    .message {
+      margin-bottom: 12px;
+      display: flex;
+      gap: 10px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message-bubble {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      word-wrap: break-word;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .message.user .message-bubble {
+      background: #667eea;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.ai .message-bubble {
+      background: #e9ecef;
+      color: #333;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.ai .label {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .thinking {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #667eea;
+      animation: pulse 1.5s infinite;
+    }
+
+    .dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 10px;
+    }
+
+    #chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+
+    #chat-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+
+    #ingest {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      width: 100%;
+    }
+
+    #ingest:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    #ingest:active {
+      transform: translateY(0);
+    }
+
+    #chat-send {
+      background: #667eea;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    #chat-send:hover {
+      background: #764ba2;
+      transform: translateY(-2px);
+    }
+
+    #chat-send:active {
+      transform: translateY(0);
+    }
+
+    #output {
+      background: #f4f4f4;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #666;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 12px;
+      border: 1px solid #ddd;
+    }
+
+    .error {
+      color: #dc3545;
+      background: #fff5f5;
+      padding: 12px;
+      border-radius: 6px;
+      border-left: 4px solid #dc3545;
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-section {
+        height: 500px;
+      }
+
+      .message-bubble {
+        max-width: 85%;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
+  </style>
 </head>
 <body>
-  <h1>AI Agentic App</h1>
-  <p>Trigger document ingestion to your Pinecone index.</p>
-  <button id="ingest">Trigger Ingest</button>
-  <pre id="output"></pre>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI Knowledge Assistant</h1>
+      <p>An intelligent document-based Q&A system powered by AI. Ingest your documents into a vector database and ask natural language questions to get instant, accurate answers from your knowledge base.</p>
+    </div>
 
-  <hr />
-  <h2>Chat (QA over ingested docs)</h2>
-  <div>
-    <input id="chat-input" placeholder="Ask a question about the documents" style="width:60%" />
-    <button id="chat-send">Send</button>
+    <div class="content">
+      <div class="ingest-section">
+        <h2>📚 Document Ingestion</h2>
+        <p>Start by ingesting your documents into the Pinecone vector database. This process extracts and indexes your documents for intelligent searching and retrieval.</p>
+        <button id="ingest">Trigger Ingest</button>
+        <pre id="output"></pre>
+      </div>
+
+      <div class="chat-section">
+        <h2>💬 Ask Questions</h2>
+        <div id="chat-history"></div>
+        <div class="chat-input-area">
+          <input id="chat-input" placeholder="Ask a question about your documents..." />
+          <button id="chat-send">Send</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="chat-output" style="margin-top:12px"></div>
 
   <script>
+    let chatMessages = [];
+
+    function scrollToBottom() {
+      const chatHistory = document.getElementById('chat-history');
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    function addMessage(message, isUser) {
+      const chatHistory = document.getElementById('chat-history');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+
+      if (isUser) {
+        messageDiv.innerHTML = `
+          <div class="message-bubble">${escapeHtml(message)}</div>
+        `;
+      } else {
+        messageDiv.innerHTML = `
+          <div>
+            <div class="label">AI Assistant</div>
+            <div class="message-bubble">${message}</div>
+          </div>
+        `;
+      }
+
+      chatHistory.appendChild(messageDiv);
+      scrollToBottom();
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function showThinking() {
+      const chatHistory = document.getElementById('chat-history');
+      const thinkingDiv = document.createElement('div');
+      thinkingDiv.className = 'message ai';
+      thinkingDiv.id = 'thinking-message';
+      thinkingDiv.innerHTML = `
+        <div class="thinking">
+          <span>AI is thinking</span>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      `;
+      chatHistory.appendChild(thinkingDiv);
+      scrollToBottom();
+    }
+
+    function removeThinking() {
+      const thinkingMessage = document.getElementById('thinking-message');
+      if (thinkingMessage) {
+        thinkingMessage.remove();
+      }
+    }
+
     document.getElementById('ingest').addEventListener('click', async () => {
       const out = document.getElementById('output');
       out.textContent = 'Starting ingestion...';
+      const btn = document.getElementById('ingest');
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+
       try {
         const res = await fetch('/api/ingest', { method: 'POST' });
         const data = await res.json();
         out.textContent = JSON.stringify(data, null, 2);
       } catch (err) {
         out.textContent = 'Error: ' + err;
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
       }
     });
 
     document.getElementById('chat-send').addEventListener('click', async () => {
-  const q = document.getElementById('chat-input').value.trim();
-  const out = document.getElementById('chat-output');
-  if (!q) return;
+      const q = document.getElementById('chat-input').value.trim();
+      if (!q) return;
 
-  out.innerHTML = '<p><em>Thinking...</em></p>';
+      addMessage(q, true);
+      document.getElementById('chat-input').value = '';
+      showThinking();
 
-  try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: q }),
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: q }),
+        });
+
+        const data = await res.json();
+        console.log('API data:', data);
+
+        removeThinking();
+
+        if (res.ok) {
+          const answer =
+            data.answer ||
+            data.text ||
+            data.response ||
+            'No response generated';
+
+          addMessage(answer.replace(/\n/g, '<br/>'), false);
+        } else {
+          addMessage(`<span style="color: #dc3545;">Error: ${escapeHtml(data.error || JSON.stringify(data))}</span>`, false);
+        }
+      } catch (err) {
+        removeThinking();
+        addMessage(`<span style="color: #dc3545;">Error: ${escapeHtml(err.toString())}</span>`, false);
+      }
     });
 
-    const data = await res.json();
-    console.log('API data:', data); // 🔥 debug once
-
-    if (res.ok) {
-      const answer =
-        data.answer ||
-        data.text ||
-        data.response ||
-        'No response generated';
-
-      out.innerHTML = `
-        <div style="background:#eef;padding:12px;border-radius:6px">
-          ${answer.replace(/\n/g, '<br/>')}
-        </div>
-      `;
-    } else {
-      out.innerHTML = `<div style="color:red">Error: ${data.error || JSON.stringify(data)}</div>`;
-    }
-  } catch (err) {
-    out.innerHTML = `<div style="color:red">${err}</div>`;
-  }
-});
+    // Allow sending message with Enter key
+    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('chat-send').click();
+      }
+    });
   </script>
 </body>
 </html>
