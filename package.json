@@ -6,7 +6,8 @@
     "start": "node server.js",
     "query": "node query.js",
     "ingest": "node cli.js",
-    "lint": "eslint . --ext .js"
+    "lint": "eslint . --ext .js",
+    "build": "echo Build complete"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
